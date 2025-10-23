@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ruleta de Premios – Clínica Veterinaria Dus</title>
+<style>
+  body {
+    background-color: #ffeef5;
+    font-family: 'Poppins', sans-serif;
+    text-align: center;
+    color: #555;
+    background-image: url('https://i.imgur.com/Z7VZ2gD.png');
+    background-repeat: repeat;
+  }
+  h1 {
+    color: #e381a9;
+  }
+  canvas {
+    margin-top: 20px;
+    background-color: #fff;
+    border: 8px solid #e381a9;
+    border-radius: 50%;
+  }
+  button {
+    margin-top: 20px;
+    padding: 12px 25px;
+    font-size: 16px;
+    background-color: #e381a9;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+  }
+  button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+  }
+  #result {
+    margin-top: 20px;
+    font-size: 20px;
+    color: #333;
+  }
+</style>
+</head>
+<body>
+  <h1>🎡 Ruleta de Premios 🎡<br>Clínica Veterinaria Dus</h1>
+  <canvas id="wheel" width="300" height="300"></canvas><br>
+  <button id="spin">Girar</button>
+  <p id="result"></p>
+
+  <audio id="spinSound" src="https://www.soundjay.com/mechanical/sounds/mechanical-wheel-1.mp3"></audio>
+  <audio id="winSound" src="https://www.soundjay.com/button/sounds/button-3.mp3"></audio>
+
+  <script>
+    const canvas = document.getElementById("wheel");
+    const ctx = canvas.getContext("2d");
+    const spinButton = document.getElementById("spin");
+    const result = document.getElementById("result");
+    const spinSound = document.getElementById("spinSound");
+    const winSound = document.getElementById("winSound");
+
+    const prizes = [
+      "Galletas de pollo 🍗",
+      "Galletas de atún 🐟",
+      "10% descuento en baño 🛁",
+      "10% descuento en vacunas 💉",
+      "Desparasitación gratis 🐶",
+      "Nada 😅"
+    ];
+
+    const colors = ["#f8c8dc","#fce4ec","#f9b2d0","#fbd0e3","#fcdde8","#f6a9cc"];
+    let rotation = 0;
+
+    function drawWheel() {
+      const slice = 2 * Math.PI / prizes.length;
+      for (let i = 0; i < prizes.length; i++) {
+        ctx.beginPath();
+        ctx.fillStyle = colors[i % colors.length];
+        ctx.moveTo(150, 150);
+        ctx.arc(150, 150, 150, i * slice, (i + 1) * slice);
+        ctx.lineTo(150, 150);
+        ctx.fill();
+        ctx.save();
+        ctx.translate(150, 150);
+        ctx.rotate(slice * i + slice / 2);
+        ctx.textAlign = "right";
+        ctx.fillStyle = "#555";
+        ctx.font = "bold 14px Poppins";
+        ctx.fillText(prizes[i], 130, 5);
+        ctx.restore();
+      }
+      const logo = new Image();
+      logo.src = "logo.png";
+      logo.onload = () => ctx.drawImage(logo, 100, 100, 100, 100);
+    }
+
+    drawWheel();
+
+    if (localStorage.getItem("hasSpunDus")) {
+      spinButton.disabled = true;
+      result.textContent = "Ya has girado la ruleta 🐾 ¡Gracias por participar!";
+    }
+
+    spinButton.addEventListener("click", () => {
+      spinSound.play();
+      let spinTime = 0;
+      const spinTimeTotal = Math.random() * 3000 + 4000;
+      const spin = () => {
+        spinTime += 30;
+        if (spinTime >= spinTimeTotal) {
+          stopRotateWheel();
+          return;
+        }
+        const spinAngle = Math.random() * 10 + 10;
+        rotation += spinAngle * Math.PI / 180;
+        ctx.save();
+        ctx.clearRect(0, 0, 300, 300);
+        ctx.translate(150, 150);
+        ctx.rotate(rotation);
+        ctx.translate(-150, -150);
+        drawWheel();
+        ctx.restore();
+        requestAnimationFrame(spin);
+      };
+      spin();
+      function stopRotateWheel() {
+        spinSound.pause();
+        winSound.play();
+        const degrees = rotation * 180 / Math.PI + 90;
+        const arcd = 360 / prizes.length;
+        const index = Math.floor((360 - (degrees % 360)) / arcd) % prizes.length;
+        const prize = prizes[index];
+        result.textContent = `🎁 ¡Ganaste: ${prize}!\n¡Gracias por celebrar con nosotros el aniversario de Dus! 🎉`;
+        localStorage.setItem("hasSpunDus", true);
+        spinButton.disabled = true;
+      }
+    });
+  </script>
+</body>
+</html>
